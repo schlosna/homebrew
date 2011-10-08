@@ -1,18 +1,18 @@
 require 'formula'
 
-class Sshuttle <Formula
-  url 'https://github.com/apenwarr/sshuttle/tarball/sshuttle-0.43a'
+class Sshuttle < Formula
+  url 'https://github.com/apenwarr/sshuttle/zipball/sshuttle-0.54'
   homepage 'https://github.com/apenwarr/sshuttle'
-  md5 '51c736b890b9a7fcfc731e82f4279638'
-  version '0.43a'
+  md5 'ccc36404fcda1cf411e4ec2ed37927e6'
+  version '0.54'
 
-  head 'git://github.com/apenwarr/sshuttle.git'
+  head 'https://github.com/apenwarr/sshuttle.git'
 
   def install
     libexec.install Dir['*']
     (bin+'sshuttle').write <<-EOS.undent
       #!/bin/bash
-      exec #{libexec}/main.py "$@"
+      exec #{libexec}/sshuttle "$@"
     EOS
   end
 end

@@ -1,28 +1,37 @@
 require 'formula'
 
 class GitManuals < Formula
-  url 'http://kernel.org/pub/software/scm/git/git-manpages-1.7.3.4.tar.bz2'
-  md5 'ec0883134fa00628d9057d1551d9c739'
+  url 'http://git-core.googlecode.com/files/git-manpages-1.7.7.tar.gz'
+  sha1 '75d3cceb46f7a46eeb825033dff76af5eb5ea3d9'
 end
 
 class GitHtmldocs < Formula
-  url 'http://kernel.org/pub/software/scm/git/git-htmldocs-1.7.3.4.tar.bz2'
-  md5 '2adbb534b28be52145ddd9bb5cca2f93'
+  url 'http://git-core.googlecode.com/files/git-htmldocs-1.7.7.tar.gz'
+  sha1 '33183db94fd25e001bd8a9fd6696b992f61e28d8'
 end
 
 class Git < Formula
-  url 'http://kernel.org/pub/software/scm/git/git-1.7.3.4.tar.bz2'
-  md5 '3a2602016f98c529cda7b9fad1a6e216'
+  url 'http://git-core.googlecode.com/files/git-1.7.7.tar.gz'
+  sha1 'bbf85bd767ca6b7e9caa1489bb4ba7ec64e0ab35'
   homepage 'http://git-scm.com'
 
+  def options
+    [['--with-blk-sha1', 'compile with the optimized SHA1 implementation']]
+  end
+
   def install
-    # if these things are installed, tell git build system to not use them
+    # If these things are installed, tell Git build system to not use them
     ENV['NO_FINK']='1'
     ENV['NO_DARWIN_PORTS']='1'
     # If local::lib is used you get a 'Only one of PREFIX or INSTALL_BASE can be given' error
-    ENV['PERL_MM_OPT']='';
-    # build verbosely so we can debug better
+    ENV['PERL_MM_OPT']=''
+    # Build verbosely.
     ENV['V']='1'
+
+    # Clean XCode 4.x installs don't include Perl MakeMaker
+    ENV['NO_PERL_MAKEMAKER']='1' if MacOS.lion?
+
+    ENV['BLK_SHA1']='YesPlease' if ARGV.include? '--with-blk-sha1'
 
     inreplace "Makefile" do |s|
       s.remove_make_var! %w{CFLAGS LDFLAGS}
@@ -30,20 +39,18 @@ class Git < Formula
 
     system "make", "prefix=#{prefix}", "install"
 
-    # Install the git bash completion file.  Put it into the Cellar so
-    # that it gets upgraded along with git upgrades.  (Normally, etc
-    # files go directly into HOMEBREW_PREFIX so that they don't get
-    # clobbered on upgrade.)
-
+    # Install the Git bash completion file.
+    # Put it into the Cellar so that it gets upgraded along with git upgrades.
     (prefix+'etc/bash_completion.d').install 'contrib/completion/git-completion.bash'
+
+    # Install emacs support.
     (share+'doc/git-core/contrib').install 'contrib/emacs'
+    # Some people like the stuff in the contrib folder
+    (share/:git).install 'contrib'
 
-    # Install git-p4
-    bin.install 'contrib/fast-import/git-p4'
-
-    # these files are exact copies of the git binary, so like the contents
-    # of libexec/git-core lets hard link them
-    # I am assuming this is an overisght by the git devs
+    # These files are exact copies of the git binary, so like the contents
+    # of libexec/git-core lets hard link them.
+    # I am assuming this is an overisght by the git devs.
     git_md5 = (bin+'git').md5
     %w[git-receive-pack git-upload-archive].each do |fn|
       fn = bin + fn
@@ -52,9 +59,21 @@ class Git < Formula
       fn.make_link bin+'git'
     end
 
-    # we could build the manpages ourselves, but the build process depends
-    # on many other packages, and is somewhat crazy, this way is easier
+    # We could build the manpages ourselves, but the build process depends
+    # on many other packages, and is somewhat crazy, this way is easier.
     GitManuals.new.brew { man.install Dir['*'] }
     GitHtmldocs.new.brew { (share+'doc/git-doc').install Dir['*'] }
+  end
+
+  def caveats; <<-EOS.undent
+    Bash completion has been installed to:
+      #{etc}/bash_completion.d
+
+    Emacs support has been installed to:
+      #{HOMEBREW_PREFIX}/share/doc/git-core/contrib/emacs
+
+    The rest of the "contrib" is installed to:
+      #{HOMEBREW_PREFIX}/share/git/contrib
+    EOS
   end
 end
